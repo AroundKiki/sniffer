@@ -1,13 +1,14 @@
-from scapy.all import show_interfaces, sniff
+# from scapy.all import show_interfaces, sniff
+# from scapy.arch.windows import *
+# conf.prog.powershell = None  # Enable VBS fallback
+from scapy.all import *
+# import scapy.all as scapy
 
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
 
 
 if __name__ == '__main__':
+    print('start')
     show_interfaces()
-    result = sniff(iface='Intel(R) Wi-Fi 6 AX201 160MHz', count=30)
+    result = sniff(iface='Intel(R) Wi-Fi 6 AX201 160MHz')
     result.show()
 
