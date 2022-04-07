@@ -4,6 +4,7 @@ from program_ui import *
 from scapy.all import *
 from scapy.layers import http
 from datetime import datetime
+from scapy.arch.windows import *
 
 
 class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
@@ -37,14 +38,17 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         self.toolBar.addAction(stopAction)
 
     def get_interfaces(self):
-        # TODO 展开网卡列表
-        self.comboBoxIface.addItems(["Intel(R) Wi-Fi 6 AX201 160MHz"])
+        # 获得网卡列表
+        interfaces = []
+        for item in IFACES.data.values():
+            interfaces.append(item.description)
+        self.comboBoxIface.addItems(interfaces)
 
     def start_sniffer(self):
-        global count
-        global to_show
-        count = 0
-        to_show = 0
+        # global count
+        # global to_show
+        self.count = 0
+        self.to_show = 0
         self.catch_list = []
         self.tableWidget.removeRow(0)
         self.tableWidget.setRowCount(0)
@@ -54,17 +58,17 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         self.scapy_t.start()
 
     def update_table(self, packet):
-        global count
-        global to_show
+        self.count
+        self.to_show
         p_time = datetime.utcfromtimestamp(packet.time)
         p_type = packet.type
 
         if p_type == 0x800 :
-            count += 1
-            to_show = count
+            self.count += 1
+            self.to_show = self.count
             row = self.tableWidget.rowCount()
             self.tableWidget.insertRow(row)
-            self.tableWidget.setItem(row, 0, QtWidgets.QTableWidgetItem(str(count)))
+            self.tableWidget.setItem(row, 0, QtWidgets.QTableWidgetItem(str(self.count)))
             self.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(p_time)))
             self.tableWidget.setItem(row, 2, QtWidgets.QTableWidgetItem(packet[IP].src))
             self.tableWidget.setItem(row, 3, QtWidgets.QTableWidgetItem(packet[IP].dst))
@@ -137,11 +141,11 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
                 self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem(str(packet[IP].proto)))
 
         elif p_type == 0x806:  # ARP
-            count += 1
-            to_show = count
+            self.count += 1
+            self.to_show = self.count
             row = self.tableWidget.rowCount()
             self.tableWidget.insertRow(row)
-            self.tableWidget.setItem(row,0, QtWidgets.QTableWidgetItem(str(count)))
+            self.tableWidget.setItem(row,0, QtWidgets.QTableWidgetItem(str(self.count)))
             self.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(p_time)))
             self.tableWidget.setItem(row,2, QtWidgets.QTableWidgetItem(packet[ARP].psrc))
             self.tableWidget.setItem(row,3, QtWidgets.QTableWidgetItem(packet[ARP].pdst))
