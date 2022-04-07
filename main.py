@@ -20,11 +20,13 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         super(MainView, self).__init__()
 
     def setupUi(self, MainWindow):
+        #界面初始化
         super(MainView, self).setupUi(MainWindow)
         self.tableWidget.insertColumn(7)
         self.tableWidget.setColumnHidden(7, True)
 
     def init_slot(self):
+        # 槽函数初始化
         self.count = 0
         self.to_show = 0
 
@@ -66,12 +68,13 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         self.scapy_t.start()
 
     def update_table(self, packet):
+        # 更新包列表
         self.count
         self.to_show
         p_time = datetime.utcfromtimestamp(packet.time)
         p_type = packet.type
 
-        if p_type == 0x800 :
+        if p_type == 0x800:
             self.count += 1
             self.to_show = self.count
             row = self.tableWidget.rowCount()
@@ -81,67 +84,69 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
             self.tableWidget.setItem(row, 2, QtWidgets.QTableWidgetItem(packet[IP].src))
             self.tableWidget.setItem(row, 3, QtWidgets.QTableWidgetItem(packet[IP].dst))
             self.tableWidget.setItem(row, 5, QtWidgets.QTableWidgetItem(str(len(packet))))
-            self.tableWidget.setItem(row, 7, QtWidgets.QTableWidgetItem(raw(packet).decode('Windows-1252', 'ignore')))
+            # self.tableWidget.setItem(row, 7, QtWidgets.QTableWidgetItem(raw(packet)))
+            self.tableWidget.setItem(row, 7, QtWidgets.QTableWidgetItem(raw(packet).decode('windows-1252', 'ignore')))
+
 
             if packet[IP].proto == 6:  #TCP
-                # if packet[TCP].dport == 80 or packet[TCP].sport == 80:  #HTTP
-                #     self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem('HTTP'))
-                #     if packet.haslayer('HTTPRequest'):
-                #         self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s %s %s' % (packet.sprintf("{HTTPRequest:%HTTPRequest.Method%}").strip("'"), packet.sprintf("{HTTPRequest:%HTTPRequest.Path%}").strip("'"),packet.sprintf("{HTTPRequest:%HTTPRequest.Http-Version%}").strip("'"))))
-                #     elif packet.haslayer('HTTPResponse'):
-                #         self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s' % packet.sprintf("{HTTPResponse:%HTTPResponse.Status-Line%}").strip("'")))
-                #     else:
-                #         self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem(''))
-                # else:
-                self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem('TCP'))
-                if packet.haslayer('TCP'):
-                    flag = ''
-                    if packet[TCP].flags.A:
+                if packet.haslayer("TLS"):
+                    self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem('TLS'))
+                    # if packet.haslayer('TLS'):
+                    summary = packet[TLS].mysummary()
+                    # else:
+                    #     summary = ''
+                    # print(summary)
+                    self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem(summary))
+                else:
+                    self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem('TCP'))
+                    if packet.haslayer('TCP'):
+                        flag = ''
+                        if packet[TCP].flags.A:
+                            if flag == '':
+                                flag += 'ACK'
+                            else:
+                                flag += ',ACK'
+                        if packet[TCP].flags.R:
+                            if flag == '':
+                                flag += 'RST'
+                            else:
+                                flag += ',RST'
+                        if packet[TCP].flags.S:
+                            if flag == '':
+                                flag += 'SYN'
+                            else:
+                                flag += ',SYN'
+                        if packet[TCP].flags.F:
+                            if flag == '':
+                                flag += 'FIN'
+                            else:
+                                flag += ',FIN'
+                        if packet[TCP].flags.U:
+                            if flag == '':
+                                flag += 'URG'
+                            else:
+                                flag += ',URG'
+                        if packet[TCP].flags.P:
+                            if flag == '':
+                                flag += 'PSH'
+                            else:
+                                flag += ',PSH'
                         if flag == '':
-                            flag += 'ACK'
+                            self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s -> %s Seq=%s Ack=%s Win=%s' % (packet[TCP].sport, packet[TCP].dport, packet[TCP].seq, packet[TCP].ack, packet[TCP].window)))
                         else:
-                            flag += ',ACK'
-                    if packet[TCP].flags.R:
-                        if flag == '':
-                            flag += 'RST'
-                        else:
-                            flag += ',RST'
-                    if packet[TCP].flags.S:
-                        if flag == '':
-                            flag += 'SYN'
-                        else:
-                            flag += ',SYN'
-                    if packet[TCP].flags.F:
-                        if flag == '':
-                            flag += 'FIN'
-                        else:
-                            flag += ',FIN'
-                    if packet[TCP].flags.U:
-                        if flag == '':
-                            flag += 'URG'
-                        else:
-                            flag += ',URG'
-                    if packet[TCP].flags.P:
-                        if flag == '':
-                            flag += 'PSH'
-                        else:
-                            flag += ',PSH'
-                    if flag == '':
-                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s -> %s Seq：%s Ack：%s Win：%s' % (packet[TCP].sport,packet[TCP].dport,packet[TCP].seq,packet[TCP].ack,packet[TCP].window)))
-                    else:
-                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s -> %s [%s] Seq：%s Ack：%s Win：%s' % (packet[TCP].sport,packet[TCP].dport,flag,packet[TCP].seq,packet[TCP].ack,packet[TCP].window)))
+                            self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s -> %s [%s] Seq=%s Ack=%s Win=%s' % (packet[TCP].sport,packet[TCP].dport,flag,packet[TCP].seq,packet[TCP].ack,packet[TCP].window)))
             elif packet[IP].proto == 17:  #UDP
                 self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem('UDP'))
-                self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s -> %s 长度(len)：%s' % (packet[UDP].sport,packet[UDP].dport,packet[UDP].len)))
+                self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s -> %s Len=%s' % (packet[UDP].sport,packet[UDP].dport,packet[UDP].len)))
             elif packet[IP].proto == 1:   #ICMP
                 self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem('ICMP'))
                 if packet.haslayer('ICMP'):
                     if packet[ICMP].type == 8:
-                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('Echo (ping) request id：%s seq：%s' % (packet[ICMP].id,packet[ICMP].seq)))
+                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('Echo (ping) request id=%s seq=%s' % (packet[ICMP].id,packet[ICMP].seq)))
                     elif packet[ICMP].type == 0:
-                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('Echo (ping) reply id：%s seq：%s' % (packet[ICMP].id,packet[ICMP].seq)))
+                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('Echo (ping) reply id=%s seq=%s' % (packet[ICMP].id,packet[ICMP].seq)))
                     else:
-                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('type：%s id：%s seq：%s' % (packet[ICMP].type,packet[ICMP].id,packet[ICMP].seq)))
+                        self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('type=%s id=%s seq=%s' % (packet[ICMP].type,packet[ICMP].id,packet[ICMP].seq)))
             elif packet[IP].proto == 2:  #IGMP
                 self.tableWidget.setItem(row,4, QtWidgets.QTableWidgetItem('IGMP'))
                 self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem(''))
@@ -163,14 +168,15 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
                 self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('Who has %s? Tell %s' % (packet[ARP].pdst,packet[ARP].psrc)))
             elif packet[ARP].op == 2:  #reply
                 self.tableWidget.setItem(row,6, QtWidgets.QTableWidgetItem('%s is at %s' % (packet[ARP].psrc,packet[ARP].hwsrc)))
-            self.tableWidget.setItem(row,7, QtWidgets.QTableWidgetItem(raw(packet).decode('Windows-1252','ignore')))
+            self.tableWidget.setItem(row,7, QtWidgets.QTableWidgetItem(raw(packet).decode('windows-1252','ignore')))
 
         self.catch_list.append(packet)
 
     def show_detail(self):
+        # 展开包内容
         row = self.tableWidget.currentRow()  # 鼠标焦点
         r7 = self.tableWidget.item(row, 7)
-        packet = scapy.layers.l2.Ether(r7.text().encode('Windows-1252'))
+        packet = scapy.layers.l2.Ether(r7.text().encode('windows-1252'))
         num = self.tableWidget.item(row, 0).text()
         Time = self.tableWidget.item(row, 1).text()
         length = self.tableWidget.item(row, 5).text()
@@ -179,7 +185,6 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         timeformat = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(packet.time))
 
         packet.show()
-        print('123')
         self.treeWidget.clear()
         self.treeWidget.setColumnCount(1)
 
@@ -270,7 +275,7 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
                     FIN 置1时表示发端完成发送任务。用来释放连接，表明发送方已经没有数据发送了。
                     URG 紧急指针，告诉接收TCP模块紧要指针域指着紧要数据。注：一般不使用。
                     PSH 置1时请求的数据段在接收方得到后就可直接送到应用程序，而不必等到缓冲区满时才传送。注：一般不使用。
-                  '''
+                    '''
                     tcpFlagsACK = QtWidgets.QTreeWidgetItem(tcpFlags)
                     tcpFlagsACK.setText(0, '确认(ACK)：%s' % packet[TCP].flags.A)
                     tcpFlagsRST = QtWidgets.QTreeWidgetItem(tcpFlags)
@@ -603,7 +608,31 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
                                 httpLastModified = QtWidgets.QTreeWidgetItem(http)
                                 httpLastModified.setText(0, 'Last-Modified：%s' % packet.sprintf(
                                     "{HTTPResponse:%HTTPResponse.Last-Modified%}").strip("'"))
-
+            if packet.haslayer('TLS'):
+                tls = QtWidgets.QTreeWidgetItem(self.treeWidget)
+                if packet[TLS].version == 769:
+                    version = "TLS 1.0"
+                elif packet[TLS].version == 770:
+                    version = "TLS 1.1"
+                elif packet[TLS].version == 771:
+                    version = "TLS 1.2"
+                elif packet[TLS].version == 772:
+                    version = "TLS 1.3"
+                tls.setText(0, 'Transport Layer Security')
+                tlsVersion = QtWidgets.QTreeWidgetItem(tls)
+                tlsVersion.setText(0, '版本：%s' % version)
+                tlsType = QtWidgets.QTreeWidgetItem(tls)
+                tlsType.setText(0, '内容种类：%s' % packet[TLS].type)
+                tlsLen = QtWidgets.QTreeWidgetItem(tls)
+                tlsLen.setText(0, '长度：%s' % packet[TLS].len)
+                if packet[TLS].haslayer("TLSClientHello") or packet[TLS].haslayer("TLSServerHello"):
+                    tlsHello = QtWidgets.QTreeWidgetItem(tls)
+                    if packet[TLS].haslayer("TLSClientHello"):
+                        tlsHello.setText(0, 'Handshake Type：%s' % 'Client Hello')
+                        print('1')
+                    else:
+                        tlsHello.setText(0, 'Handshake Type：%s' % 'Server Hello')
+                        print('2')
 
             # UDP
             elif packet[IP].proto == 17:
@@ -770,7 +799,6 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         except:
             QtWidgets.QMessageBox.information(None, "失败", "保存失败")
 
-
     def stop_sniffer(self):
         # 停止抓包
         self.scapy_t.terminate()
@@ -787,7 +815,7 @@ class ScapyThread(QtCore.QThread):
         self.interface = interface
 
     def run(self):
-        sniff(filter=self.filter, iface=self.interface, prn=self.exception)
+        sniff(session=TLSSession, filter=self.filter, iface=self.interface, prn=self.exception)
 
     def exception(self, signal):
         self.HandleSignal.emit(signal)
@@ -797,8 +825,11 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
+    load_layer("tls")
     ui = MainView()
     ui.setupUi(MainWindow)
     ui.init_slot()
     MainWindow.show()
     sys.exit(app.exec_())
+
+sniff()
