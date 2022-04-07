@@ -18,12 +18,22 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
 
     def __init__(self):
         super(MainView, self).__init__()
+        self.setupUi(MainWindow)
+        self.init_slot()
 
     def setupUi(self, MainWindow):
         #界面初始化
         super(MainView, self).setupUi(MainWindow)
         self.tableWidget.insertColumn(7)
         self.tableWidget.setColumnHidden(7, True)
+        self.tableWidget.verticalHeader().setVisible(False)
+        self.tableWidget.setColumnWidth(0, 60)
+        self.tableWidget.setColumnWidth(1, 150)
+        self.tableWidget.setColumnWidth(2, 150)
+        self.tableWidget.setColumnWidth(3, 150)
+        self.tableWidget.setColumnWidth(4, 60)
+        self.tableWidget.setColumnWidth(5, 60)
+        self.tableWidget.setColumnWidth(6, 600)
 
     def init_slot(self):
         # 槽函数初始化
@@ -43,6 +53,10 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         stopAction.triggered.connect(self.stop_sniffer)
         self.toolBar.addAction(stopAction)
 
+        sniffFilter = QAction('设置嗅探过滤', self)
+        sniffFilter.triggered.connect(self.sniffFilter)
+        self.toolBar.addAction(sniffFilter)
+
         saveAction = QAction('保存到文件', self)
         saveAction.triggered.connect(self.save_to_cap)
         self.toolBar.addAction(saveAction)
@@ -54,9 +68,15 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
             interfaces.append(item.description)
         self.comboBoxIface.addItems(interfaces)
 
+    def sniffFilter(self):
+        # 过滤规则
+        item, ok = QInputDialog.getText(self, "选项", "请输入规则", QLineEdit.Normal, "tcp")
+        if ok:
+            item = item.lower()
+            self.filter = item
+
     def start_sniffer(self):
-        # global count
-        # global to_show
+        # 开始嗅探
         self.count = 0
         self.to_show = 0
         self.catch_list = []
@@ -68,7 +88,7 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         self.scapy_t.start()
 
     def update_table(self, packet):
-        # 更新包列表
+        # 更新抓包列表
         self.count
         self.to_show
         p_time = datetime.utcfromtimestamp(packet.time)
@@ -184,7 +204,7 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
         import time
         timeformat = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(packet.time))
 
-        packet.show()
+        # packet.show()
         self.treeWidget.clear()
         self.treeWidget.setColumnCount(1)
 
@@ -300,7 +320,7 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
                     '''
                     通常为空，可根据首部长度推算。用于发送方与接收方协商最大报文段长度（MSS），或在高速网络环境下作窗口调节因子时使用。首部字段还定义了一个时间戳选项。
                     最常见的可选字段是最长报文大小，又称为MSS (Maximum Segment Size)。每个连接方通常都在握手的第一步中指明这个选项。它指明本端所能接收的最大长度的报文段。1460是以太网默认的大小。
-                  '''
+                    '''
                     # HTTP
                     if packet[TCP].dport == 80 or packet[TCP].sport == 80:
                         # HTTP Request
@@ -482,6 +502,7 @@ class MainView(Ui_MainWindow, QtWidgets.QMainWindow):
                                 httpCookie = QtWidgets.QTreeWidgetItem(http)
                                 httpCookie.setText(0, 'Cookie：%s' % packet.sprintf(
                                     "{HTTPRequest:%HTTPRequest.Cookie%}").strip("'"))
+
                         # HTTP Response
                         if packet.haslayer('HTTPResponse'):
                             http = QtWidgets.QTreeWidgetItem(self.treeWidget)
@@ -815,7 +836,7 @@ class ScapyThread(QtCore.QThread):
         self.interface = interface
 
     def run(self):
-        sniff(session=TLSSession, filter=self.filter, iface=self.interface, prn=self.exception)
+        sniff(session=TLSSession, filter=self.filter, iface=self.interface, prn=self.exception)  # session指示抓包时分析TLS
 
     def exception(self, signal):
         self.HandleSignal.emit(signal)
@@ -825,11 +846,7 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    load_layer("tls")
+    load_layer("tls")  # 激活TLS模块
     ui = MainView()
-    ui.setupUi(MainWindow)
-    ui.init_slot()
     MainWindow.show()
     sys.exit(app.exec_())
-
-sniff()
